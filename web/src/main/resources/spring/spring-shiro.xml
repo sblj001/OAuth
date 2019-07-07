@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <!-- 1、Shiro整合处理的时候，Realm是整合业务层（RPC端）的核心处理综合点 -->
+    <bean id="oauthRealm" class="com.yootk.oauth.realm.OAuthRealm">
+        <property name="cachingEnabled" value="true"/>  <!-- 启用缓存 -->
+        <property name="authenticationCachingEnabled" value="true"/>    <!-- 启用认证缓存 -->
+        <property name="authenticationCacheName" value="authenticationCache"/> <!-- 设置认证缓存管理器名称 -->
+        <property name="authorizationCachingEnabled" value="true"/>    <!-- 启用授权缓存 -->
+        <property name="authorizationCacheName" value="authorizationCache"/> <!-- 设置授权缓存管理器名称 -->
+        <property name="cacheManager" ref="cacheManager"/> <!-- 设置缓存管理器 -->
+        <property name="clientId" value="${oauth.client.id}"/>
+        <property name="clientSecret" value="${oauth.client.secret}"/>
+        <property name="accessTokenUrl" value="${oauth.token.url}"/>
+        <property name="memberInfoUrl" value="${oauth.memberinfo.url}"/>
+        <property name="redirectUri" value="${oauth.redirect.uri}"/>
+    </bean>
+    <!-- 2、整个的Shiro里面最为重要的就是SecurityManager，这个类之中需要追加realm配置 -->
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <property name="realm" ref="oauthRealm"/>   <!-- 配置要使用的Realm处理程序 -->
+        <property name="cacheManager" ref="cacheManager"/>
+        <property name="sessionManager" ref="sessionManager"/>
+        <property name="rememberMeManager" ref="cookieRememberMeManager"/>
+    </bean>
+
+    <bean id="logoutFilter" class="org.apache.shiro.web.filter.authc.LogoutFilter">
+        <!-- 在登录注销实现之后，将跳转到CommonAction中配置的“/logoutInfo.action”路径 -->
+        <property name="redirectUrl" value="/logoutInfo.action"/>
+    </bean>
+
+    <bean id="kickoutFilter" class="com.yootk.oauth.filter.authc.KickoutSessionControlFilter">
+        <property name="sessionManager" ref="sessionManager"/>
+        <property name="kickoutCacheName" value="kickoutCache"/>
+        <property name="cacheManager" ref="cacheManager"/>
+        <property name="kickoutUrl" value="/kickout.jsp"/>
+        <property name="max" value="${concurrent.online.session.kickout.max}"/>
+        <property name="kickoutAttributeName" value="kickout"/>
+    </bean>
+
+    <bean id="oauthFilter" class="com.yootk.oauth.filter.authc.OAuthAuthenticatingFilter">
+        <!-- 如果现在OAuth的处理失败（clientId不正确）则应该配置一个跳转路径 -->
+        <property name="failureUrl" value="/pages/failure.action"/>
+        <!-- 当用户在OAuth端登录完成之后需要返回有一个authcode -->
+        <property name="authcodeParam" value="code"/>
+    </bean>
+
+    <!-- 5、定义Shiro可以使用的session生成管理器，通过此操作进行Shiro-session管理 -->
+    <bean id="sessionIdGenerator"
+          class="org.apache.shiro.session.mgt.eis.JavaUuidSessionIdGenerator"/>
+    <!-- 6、定义一个Session数据操作类的实例，该实例需要通过SessionID生成器维护Session -->
+    <bean id="sessionDAO"
+          class="org.apache.shiro.session.mgt.eis.EnterpriseCacheSessionDAO">
+        <property name="sessionIdGenerator" ref="sessionIdGenerator"/>
+        <property name="cacheManager" ref="cacheManager"/>
+        <!-- 针对于Session数据的存储操作，定义有一个专属的缓存名称 -->
+        <property name="activeSessionsCacheName" value="shiro-activeSessionCache"/>
+    </bean>
+    <!-- 7、定义Cookie的存储配置 -->
+    <bean id="sessionIdCookie" class="org.apache.shiro.web.servlet.SimpleCookie">
+        <property name="name" value="HappyLee-Session-ID"/> <!-- Cookie属性名称 -->
+    </bean>
+
+    <!-- 8、定义session管理器，实现session的整体配置 -->
+    <bean id="sessionManager"
+          class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager">
+        <property name="sessionDAO" ref="sessionDAO"/>
+        <property name="sessionIdCookie" ref="sessionIdCookie"/>
+        <property name="globalSessionTimeout" value="1800000"/> <!-- 单位：毫秒，30分钟超时 -->
+        <property name="deleteInvalidSessions" value="true"/><!-- 删除无效session -->
+        <property name="sessionIdCookieEnabled" value="true"/><!-- session存在Cookie中 -->
+    </bean>
+
+    <!-- 9、为RememberMe在客户端的存储配置有一个Cookie的信息 -->
+    <bean id="rememberMeCookie" class="org.apache.shiro.web.servlet.SimpleCookie">
+        <property name="name" value="HappyLee-RememberMe"/> <!-- Cookie存储名称 -->
+        <property name="path" value="/"/><!-- Cookie存储路径 -->
+        <property name="maxAge" value="2592000"/><!-- 30天内免登录有效，单位：秒 -->
+    </bean>
+
+    <!-- 10、针对于Cookie中提供的RememberMe的功能定义一个专属的管理器 -->
+    <bean id="cookieRememberMeManager"
+          class="org.apache.shiro.web.mgt.CookieRememberMeManager">
+        <property name="cookie" ref="rememberMeCookie"/>
+    </bean>
+
+
+    <!-- 9、 在Spring中配置有关Shiro的全部的过滤器的定义，这个名称必须与web.xml文件保持一致-->
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager"/>
+        <property name="loginUrl" value="${oauth.login.url}"/> <!-- 配置登录页 -->
+        <property name="successUrl" value="/pages/welcome.action"/> <!-- 配置登录页 -->
+        <property name="unauthorizedUrl" value="/noauthz.action"/>
+        <property name="filters">   <!-- 在ShiroFilter中配置要使用的过滤器 -->
+            <map>
+                <!-- authc描述的执行处理路径，此时相当于替换了原始的authc功能 -->
+                <entry key="oauthAuthc" value-ref="oauthFilter"/>
+                <entry key="logout" value-ref="logoutFilter"/>
+                <entry key="kickout" value-ref="kickoutFilter"/>
+            </map>
+        </property>
+        <property name="filterChainDefinitions"><!-- 检测路径 -->
+            <value>
+                /logout.shiro=logout
+                /shiro-oauth=oauthAuthc
+                /login.action=authc
+                /pages/**=authc,kickout
+            </value>
+        </property>
+    </bean>
+</beans>

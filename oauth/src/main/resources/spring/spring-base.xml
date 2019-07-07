@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/context
+            https://www.springframework.org/schema/context/spring-context.xsd
+            http://www.springframework.org/schema/aop
+            https://www.springframework.org/schema/aop/spring-aop.xsd">
+    <!-- 进行扫描包的设置，如果要设置多个包，则可以使用“,”拆分 -->
+    <context:component-scan base-package="com.yootk.oauth.config,com.yootk.oauth.service.impl"/>
+    <context:property-placeholder location="classpath:config/*.properties"/>
+    <aop:aspectj-autoproxy/>    <!-- 启用Annotation注解支持 -->
+    <import resource="spring-datasource.xml"/>
+    <import resource="spring-transaction.xml"/>
+    <import resource="spring-mybatis.xml"/>
+    <import resource="spring-shiro.xml"/>
+    <import resource="spring-shiro-cache.xml"/>
+    <bean id="lifecycleBeanPostProcessor"
+          class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+
+    <!-- 此时表示在业务层的配置中进行AOP的切面定义 -->
+    <bean id="serviceDefaultAdvisorAutoProxyCreator"
+          depends-on="lifecycleBeanPostProcessor"
+          class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator">
+        <property name="proxyTargetClass" value="true"/> <!-- 开启代理操作 -->
+    </bean>
+    <!-- 针对于SecurityManager设置一个处理的拦截器 -->
+    <bean id="serviceAuthorizationAttributeSourceAdvisor"
+          class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+        <property name="securityManager" ref="securityManager"/>
+    </bean>
+</beans>

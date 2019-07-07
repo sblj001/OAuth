@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 定义所有的SQL语句的映射， 对于本实体而言相关的所有的SQL代码都在此定义 -->
+<mapper namespace="com.yootk.client.dao.IClientDAO">
+    <resultMap id="clientResultMap" type="Client">
+        <id property="clientId" column="client_id"/>
+        <result property="clientSecret" column="client_secret"/>
+    </resultMap>
+    <sql id="base">
+        SELECT client_id,client_secret FROM client
+    </sql>
+    <select id="findById" parameterType="string" resultMap="clientResultMap">
+        <include refid="base"/>
+        <where>
+            client_id=#{cid}
+        </where>
+    </select>
+</mapper>
