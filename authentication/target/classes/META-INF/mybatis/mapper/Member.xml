@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 定义所有的SQL语句的映射， 对于本实体而言相关的所有的SQL代码都在此定义 -->
+<mapper namespace="com.yootk.authz.dao.IMemberDAO">   <!-- SSM整合的时候，这个命名空间异常重要 -->
+    <sql id="selectBase">
+         SELECT mid,name,password,locked FROM member
+    </sql>
+    <select id="findById" parameterType="string" resultType="Member">
+        <include refid="selectBase"/>
+        <where>
+            mid=#{mid}
+        </where>
+    </select>
+</mapper>

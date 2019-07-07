@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="sessionRedisCache" class="com.yootk.ssm.util.cache.RedisCache">
+        <property name="redisConnectionFactory" ref="shiroSessionRedisConnectionFactory"/>
+    </bean>
+    <bean id="authenticationCache" class="com.yootk.ssm.util.cache.RedisCache">
+        <property name="redisConnectionFactory" ref="shiroAuthenticationRedisConnectionFactory"/>
+    </bean>
+    <bean id="authorizationRedisCache" class="com.yootk.ssm.util.cache.RedisCache">
+        <property name="redisConnectionFactory" ref="shiroAuthorizationRedisConnectionFactory"/>
+    </bean>
+    <bean id="retryRedisCache" class="com.yootk.ssm.util.cache.RedisCache">
+        <property name="redisConnectionFactory" ref="shiroRetryRedisConnectionFactory"/>
+    </bean>
+    <bean id="kickoutRedisCache" class="com.yootk.ssm.util.cache.RedisCache">
+        <property name="redisConnectionFactory" ref="shiroKickoutRedisConnectionFactory"/>
+    </bean>
+    <!-- 定义一个新的Redis缓存管理器，该缓存管理器设置的时候要设置有若干个RedisCache对象，以及对应的缓存名成 -->
+    <bean id="cacheManager" class="com.yootk.ssm.util.cache.manager.RedisCacheManager">
+        <property name="cacheManagerMap">
+            <map>
+                <entry key="shiro-activeSessionCache" value-ref="sessionRedisCache"/>
+                <entry key="authenticationCache" value-ref="authenticationCache"/>
+                <entry key="authorizationCache" value-ref="authorizationRedisCache"/>
+                <entry key="retryCache" value-ref="retryRedisCache"/>
+                <entry key="kickoutCache" value-ref="kickoutRedisCache"/>
+            </map>
+        </property>
+    </bean>
+</beans>
