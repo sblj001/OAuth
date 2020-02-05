@@ -62,7 +62,7 @@
         <netty.version>4.1.36.Final</netty.version>
         <curator.version>4.2.0</curator.version>
         <sentinel.version>1.6.2</sentinel.version>
-        <shiro.version>1.4.1</shiro.version>
+        <shiro.version>1.5.0</shiro.version>
         <log4j.version>2.12.0</log4j.version>
         <shiro.project.version>1.0</shiro.project.version>
         <commons-logging.version>1.2</commons-logging.version>
